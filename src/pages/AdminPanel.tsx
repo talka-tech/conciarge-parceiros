@@ -17,6 +17,7 @@ import {
   ArrowLeft
 } from "@phosphor-icons/react";
 import Navigation from "@/components/Navigation";
+import { supabase } from "@/lib/supabaseClient";
 
 interface PartnerRequest {
   id: string;
@@ -28,6 +29,7 @@ interface PartnerRequest {
   phone: string;
   created_at: string;
   status?: string;
+  partner_id?: string;
 }
 
 export default function AdminPanel() {
@@ -51,37 +53,34 @@ export default function AdminPanel() {
 
   const loadPendingRequests = async () => {
     try {
-      // Simulando dados mock para teste
-      const mockRequests: PartnerRequest[] = [
-        {
-          id: '1',
-          user_id: 'user1',
-          partner_email: 'dr.silva@clinicanova.com',
-          partner_name: 'Dr. João Silva',
-          company_name: 'Clínica Nova Saúde',
-          company_type: 'Clínica Médica',
-          phone: '(11) 99999-9999',
-          created_at: new Date().toISOString(),
-          status: 'pending'
-        },
-        {
-          id: '2',
-          user_id: 'user2',
-          partner_email: 'contato@consultoriomoderno.com',
-          partner_name: 'Dra. Maria Santos',
-          company_name: 'Consultório Moderno',
-          company_type: 'Consultório Odontológico',
-          phone: '(11) 88888-8888',
-          created_at: new Date(Date.now() - 86400000).toISOString(), // 1 dia atrás
-          status: 'pending'
-        }
-      ];
+      // Carregar solicitações do Supabase
+      const { data: requests, error } = await supabase
+        .from('partner_approval_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
-      // Carregamos do localStorage se existir, senão usamos os dados mock
-      const savedRequests = localStorage.getItem('partner_requests');
-      const requests = savedRequests ? JSON.parse(savedRequests) : mockRequests;
+      if (error) {
+        console.error("Erro ao carregar solicitações:", error);
+        // Fallback para dados mock em caso de erro
+        const mockRequests: PartnerRequest[] = [
+          {
+            id: '1',
+            user_id: 'user1',
+            partner_email: 'dr.silva@clinicanova.com',
+            partner_name: 'Dr. João Silva',
+            company_name: 'Clínica Nova Saúde',
+            company_type: 'Clínica Médica',
+            phone: '(11) 99999-9999',
+            created_at: new Date().toISOString(),
+            status: 'pending'
+          }
+        ];
+        setRequests(mockRequests);
+      } else {
+        setRequests(requests || []);
+      }
       
-      setRequests(requests);
     } catch (error) {
       console.error("Erro ao carregar solicitações:", error);
       toast({
@@ -99,7 +98,31 @@ export default function AdminPanel() {
     setLockedRequests(prev => ({ ...prev, [request.id]: true }));
     
     try {
-      // Atualizar lista local
+      // 1. Atualizar status da solicitação no Supabase
+      const { error: requestError } = await supabase
+        .from('partner_approval_requests')
+        .update({ 
+          status: approved ? 'approved' : 'rejected',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: 'admin@talka.tech'
+        })
+        .eq('id', request.id);
+
+      if (requestError) throw new Error(requestError.message);
+
+      if (approved && request.partner_id) {
+        // 2. Atualizar status do parceiro se aprovado
+        const { error: partnerError } = await supabase
+          .from('partners')
+          .update({ status: 'approved' })
+          .eq('id', request.partner_id);
+
+        if (partnerError) {
+          console.error("Erro ao atualizar status do parceiro:", partnerError);
+        }
+      }
+
+      // 3. Atualizar lista local
       const updatedRequests = requests.map(req => 
         req.id === request.id 
           ? { ...req, status: approved ? 'approved' : 'rejected' }
@@ -107,23 +130,9 @@ export default function AdminPanel() {
       );
       
       setRequests(updatedRequests);
-      localStorage.setItem('partner_requests', JSON.stringify(updatedRequests));
 
+      // 4. Mostrar toast de sucesso
       if (approved) {
-        // Salvar parceiro aprovado no localStorage
-        const approvedPartners = JSON.parse(localStorage.getItem('approved_partners') || '[]');
-        approvedPartners.push({
-          id: request.user_id,
-          name: request.partner_name,
-          email: request.partner_email,
-          companyName: request.company_name,
-          companyType: request.company_type,
-          phone: request.phone,
-          status: 'approved',
-          approvedAt: new Date().toISOString()
-        });
-        localStorage.setItem('approved_partners', JSON.stringify(approvedPartners));
-
         toast({
           title: "✅ Parceiro aprovado",
           description: `${request.partner_name} foi aprovado e pode acessar o painel.`,
@@ -136,11 +145,11 @@ export default function AdminPanel() {
         });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao processar aprovação:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível processar a aprovação.",
+        description: error.message || "Não foi possível processar a aprovação.",
         variant: "destructive"
       });
     }

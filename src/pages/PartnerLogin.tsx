@@ -38,55 +38,115 @@ export default function PartnerLogin() {
         toast({
           title: "Login administrativo realizado!",
           description: "Redirecionando para o painel admin...",
-          variant: "default"
         });
         
         setTimeout(() => {
           navigate('/parceria/admin');
-        }, 1500);
+        }, 1000);
         setIsLoading(false);
         return;
       }
       
-      // Para parceiros, usar Supabase normalmente
+      // Para parceiros, usar Supabase obrigatoriamente
       const { data, error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password
       });
+      
       if (error) {
         if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
           toast({
             title: "Confirme seu e-mail",
-            description: "Você precisa confirmar seu e-mail antes de acessar. Verifique sua caixa de entrada e spam para o link de confirmação.",
+            description: "Você precisa confirmar seu e-mail antes de acessar. Verifique sua caixa de entrada e spam.",
+            variant: "destructive"
+          });
+        } else if (error.message && error.message.toLowerCase().includes('invalid login credentials')) {
+          toast({
+            title: "Credenciais inválidas",
+            description: "E-mail ou senha incorretos. Verifique seus dados e tente novamente.",
             variant: "destructive"
           });
         } else {
           toast({
             title: "Erro no login",
-            description: error.message || "Credenciais inválidas. Verifique seu e-mail e senha.",
+            description: error.message || "Não foi possível fazer login. Tente novamente.",
             variant: "destructive"
           });
         }
         return;
       }
       
-      if (!data.user) throw new Error("Usuário não encontrado ou senha incorreta.");
+      if (!data.user) {
+        toast({
+          title: "Erro no login",
+          description: "Usuário não encontrado. Verifique suas credenciais.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Verificar se o parceiro existe e está aprovado
+      const { data: partnerData, error: partnerError } = await supabase
+        .from('partners')
+        .select('status')
+        .eq('user_id', data.user.id)
+        .single();
+
+      if (partnerError) {
+        toast({
+          title: "Conta não encontrada",
+          description: "Sua conta de parceiro não foi encontrada. Entre em contato com o suporte.",
+          variant: "destructive"
+        });
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (partnerData.status === 'pending_approval') {
+        toast({
+          title: "Aguardando aprovação",
+          description: "Sua conta ainda está em análise. Aguarde a aprovação para acessar o painel.",
+          variant: "destructive"
+        });
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (partnerData.status === 'rejected') {
+        toast({
+          title: "Conta rejeitada",
+          description: "Sua solicitação de parceria foi rejeitada. Entre em contato para mais informações.",
+          variant: "destructive"
+        });
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (partnerData.status !== 'approved') {
+        toast({
+          title: "Conta não aprovada",
+          description: "Sua conta não está aprovada para acesso. Entre em contato com o suporte.",
+          variant: "destructive"
+        });
+        await supabase.auth.signOut();
+        return;
+      }
       
       toast({
         title: "Login realizado com sucesso!",
         description: "Redirecionando para o seu painel...",
-        variant: "default"
       });
       
-      // Login de parceiro normal
+      // Login de parceiro aprovado
       setTimeout(() => {
         navigate('/parceria/painel');
-      }, 1500);
+      }, 1000);
       
     } catch (error: any) {
+      console.error("Erro no login:", error);
       toast({
         title: "Erro no login",
-        description: error.message || "Credenciais inválidas. Verifique seu e-mail e senha.",
+        description: error.message || "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive"
       });
     } finally {

@@ -35,7 +35,7 @@ import {
   ArrowClockwise,
   Clock
 } from "@phosphor-icons/react";
-import Navigation from "@/components/Navigation";
+import { supabase } from "@/lib/supabaseClient";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -57,6 +57,7 @@ interface PaymentMethod {
 }
 
 interface Client {
+  id?: string; // ID do Supabase
   name: string;
   email: string;
   phone: string;
@@ -112,18 +113,49 @@ export default function PartnerDashboard() {
     addedAt: ''
   });
 
-  // Carregar clientes do localStorage ou API futura
+  // Carregar clientes do Supabase
   const loadClientsFromDatabase = async () => {
     if (!partnerData?.id) return;
     
+    setIsLoadingClients(true);
     try {
-      // Por agora, carrega do localStorage
-      const savedClients = localStorage.getItem(`clients_${partnerData.id}`);
-      if (savedClients) {
-        setClients(JSON.parse(savedClients));
+      // Carregar clientes do Supabase
+      const { data: clients, error } = await supabase
+        .from('partner_clients')
+        .select('*')
+        .eq('partner_id', partnerData.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Erro ao carregar clientes do Supabase:", error);
+        // Fallback para localStorage
+        const savedClients = localStorage.getItem(`clients_${partnerData.id}`);
+        if (savedClients) {
+          setClients(JSON.parse(savedClients));
+        }
+      } else {
+        // Converter dados do Supabase para o formato local
+        const formattedClients = clients.map(client => ({
+          id: client.id,
+          name: client.name,
+          email: client.email,
+          phone: client.phone || '',
+          company: client.company || '',
+          value: client.value || 0,
+          status: client.status,
+          implementationPaid: client.implementation_paid || false
+        }));
+        setClients(formattedClients);
       }
     } catch (error) {
       console.error("Erro ao carregar clientes:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar seus clientes.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingClients(false);
     }
   };
 
@@ -150,32 +182,46 @@ export default function PartnerDashboard() {
   useEffect(() => {
     const checkPartnerStatus = async () => {
       try {
-        // Verificar se há dados salvos no localStorage
-        let savedPartnerData = localStorage.getItem('partnerData');
+        // 1. Verificar se o usuário está autenticado no Supabase
+        const { data: { user } } = await supabase.auth.getUser();
         
-        // Se não há dados, criar um parceiro mock para demonstração
-        if (!savedPartnerData) {
-          const mockPartnerData = {
-            id: 1,
-            name: "João Silva",
-            companyName: "Clínica Saúde Mais",
-            email: "joao@saudemais.com",
-            companyType: "Clínica Médica",
-            status: 'approved'
-          };
-          localStorage.setItem('partnerData', JSON.stringify(mockPartnerData));
-          savedPartnerData = JSON.stringify(mockPartnerData);
-        }
-
-        const parsedPartnerData = JSON.parse(savedPartnerData);
-        
-        // Verificar status de aprovação
-        if (parsedPartnerData.status === 'pending_approval') {
-          setPartnerData(parsedPartnerData);
+        if (!user) {
+          navigate('/parceria/login');
           return;
         }
 
-        if (parsedPartnerData.status === 'rejected') {
+        // 2. Buscar dados do parceiro no Supabase
+        const { data: partnerData, error } = await supabase
+          .from('partners')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error("Erro ao buscar dados do parceiro:", error);
+          toast({
+            title: "Conta não encontrada",
+            description: "Você precisa criar uma conta de parceiro primeiro.",
+            variant: "destructive"
+          });
+          navigate('/parceria/cadastro');
+          return;
+        }
+
+        // 3. Verificar status de aprovação
+        if (partnerData.status === 'pending_approval') {
+          setPartnerData({
+            id: partnerData.id,
+            name: partnerData.name,
+            companyName: partnerData.company_name,
+            email: partnerData.email,
+            companyType: partnerData.company_type,
+            status: partnerData.status
+          });
+          return;
+        }
+
+        if (partnerData.status === 'rejected') {
           toast({
             title: "Conta rejeitada",
             description: "Sua solicitação de parceria foi rejeitada.",
@@ -185,13 +231,20 @@ export default function PartnerDashboard() {
           return;
         }
 
-        if (parsedPartnerData.status !== 'approved') {
+        if (partnerData.status !== 'approved') {
           navigate('/parceria/cadastro');
           return;
         }
 
         // Se chegou aqui, está aprovado
-        setPartnerData(parsedPartnerData);
+        setPartnerData({
+          id: partnerData.id,
+          name: partnerData.name,
+          companyName: partnerData.company_name,
+          email: partnerData.email,
+          companyType: partnerData.company_type,
+          status: partnerData.status
+        });
 
       } catch (error) {
         console.error("Erro ao verificar status do parceiro:", error);
@@ -214,9 +267,21 @@ export default function PartnerDashboard() {
   // const handleAddPaymentMethod = async () => {...}
   // const handleDeletePaymentMethod = async (methodId: number) => {...}
 
-  const handleLogout = () => {
-    localStorage.removeItem('partnerData');
-    navigate('/parceria');
+  const handleLogout = async () => {
+    try {
+      // Fazer logout no Supabase
+      await supabase.auth.signOut();
+      
+      // Limpar dados locais
+      localStorage.removeItem('partnerData');
+      
+      // Redirecionar para a página inicial
+      navigate('/parceria');
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      // Mesmo com erro, redireciona
+      navigate('/parceria');
+    }
   };
 
   // Função para extrair e formatar o primeiro nome do email
@@ -324,24 +389,54 @@ export default function PartnerDashboard() {
       return;
     }
 
+    if (!partnerData?.id) {
+      toast({
+        title: "Erro",
+        description: "Dados do parceiro não encontrados.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsLoadingClients(true);
       
-      // Salvar no localStorage
-      const newClientWithId = { 
-        ...newClient, 
-        id: Date.now(), // ID único baseado em timestamp
-        status: 'pending_payment' as const,
-        createdAt: new Date().toISOString()
+      // Salvar no Supabase
+      const { data, error } = await supabase
+        .from('partner_clients')
+        .insert([
+          {
+            partner_id: partnerData.id,
+            name: newClient.name,
+            email: newClient.email,
+            phone: newClient.phone,
+            company: newClient.company,
+            value: newClient.value,
+            status: 'pending_payment',
+            implementation_paid: false
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Atualizar lista local
+      const newClientFormatted = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        phone: data.phone || '',
+        company: data.company || '',
+        value: data.value,
+        status: data.status,
+        implementationPaid: data.implementation_paid
       };
       
-      const updatedClients = [...clients, newClientWithId];
+      const updatedClients = [...clients, newClientFormatted];
       setClients(updatedClients);
-      
-      // Salvar no localStorage
-      if (partnerData?.id) {
-        localStorage.setItem(`clients_${partnerData.id}`, JSON.stringify(updatedClients));
-      }
       
       setNewClient({ 
         name: '', 
@@ -357,11 +452,11 @@ export default function PartnerDashboard() {
         title: "Cliente cadastrado",
         description: "Cliente adicionado com sucesso!",
       });
-    } catch (error) {
-      console.error("Erro completo:", error);
+    } catch (error: any) {
+      console.error("Erro ao cadastrar cliente:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível cadastrar o cliente.",
+        description: error.message || "Não foi possível cadastrar o cliente.",
         variant: "destructive"
       });
     } finally {
@@ -416,17 +511,39 @@ export default function PartnerDashboard() {
       return;
     }
 
+    if (editingClientIndex === null || !editingClient.id) {
+      toast({
+        title: "Erro",
+        description: "Cliente não encontrado para edição.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      // Atualizar no Supabase
+      const { error } = await supabase
+        .from('partner_clients')
+        .update({
+          name: editingClient.name,
+          email: editingClient.email,
+          phone: editingClient.phone,
+          company: editingClient.company,
+          value: editingClient.value,
+          status: editingClient.status,
+          implementation_paid: editingClient.implementationPaid
+        })
+        .eq('id', editingClient.id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
       // Atualizar no estado local
       const updatedClients = clients.map((client, index) => 
         index === editingClientIndex ? editingClient : client
       );
       setClients(updatedClients);
-      
-      // Salvar no localStorage
-      if (partnerData?.id) {
-        localStorage.setItem(`clients_${partnerData.id}`, JSON.stringify(updatedClients));
-      }
       
       setEditingClientIndex(null);
       setEditingClient({ 
@@ -443,11 +560,11 @@ export default function PartnerDashboard() {
         title: "Cliente atualizado",
         description: "Dados do cliente atualizados com sucesso.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar edição:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as alterações.",
+        description: error.message || "Não foi possível salvar as alterações.",
         variant: "destructive"
       });
     }
@@ -467,24 +584,41 @@ export default function PartnerDashboard() {
   };
 
   const handleDeleteClient = async (index: number) => {
+    const clientToDelete = clients[index];
+    
+    if (!clientToDelete.id) {
+      toast({
+        title: "Erro",
+        description: "Cliente não encontrado para remoção.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      // Deletar do Supabase
+      const { error } = await supabase
+        .from('partner_clients')
+        .delete()
+        .eq('id', clientToDelete.id);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Atualizar estado local
       const updatedClients = clients.filter((_, i) => i !== index);
       setClients(updatedClients);
-      
-      // Salvar no localStorage
-      if (partnerData?.id) {
-        localStorage.setItem(`clients_${partnerData.id}`, JSON.stringify(updatedClients));
-      }
       
       toast({
         title: "Cliente removido",
         description: "Cliente removido com sucesso.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao deletar cliente:", error);
       toast({
         title: "Erro",
-        description: "Houve um problema ao remover o cliente.",
+        description: error.message || "Houve um problema ao remover o cliente.",
         variant: "destructive"
       });
     }

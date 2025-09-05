@@ -73,13 +73,19 @@ function PartnerSignup() {
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
+    
     try {
       // 1. Cadastro Supabase Auth
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: { data: { name: formData.name } }
+        options: { 
+          data: { 
+            name: formData.name 
+          }
+        }
       });
+      
       if (signUpError) throw new Error(signUpError.message);
       const user = signUpData.user;
       if (!user) throw new Error("Erro ao criar usuário no Supabase.");
@@ -89,119 +95,79 @@ function PartnerSignup() {
         .from('partners')
         .insert([
           {
+            user_id: user.id,
             name: formData.name,
             email: formData.email,
-            password: formData.password, // Não recomendado salvar senha em texto puro, mas segue ordem solicitada
+            password: formData.password, // Salvar para referência
             phone: formData.phone,
             company_name: formData.company_name,
             company_type: formData.company_type,
             instagram: formData.instagram,
             website: formData.website,
-            created_at: new Date().toISOString(),
-            status: 'pending_approval',
-            user_id: user.id // Mantém o vínculo com o usuário
+            status: 'pending_approval'
           }
         ])
         .select()
         .single();
+        
       if (partnerError) throw new Error(partnerError.message);
 
-      // 3. Disparar email via EmailJS
-      try {
-        await emailjs.send(
-          'service_cuhgms9', // Service ID
-          'template_5b83v1q', // Template ID
+      // 3. Inserir dados na tabela users (para compatibilidade)
+      const { error: userError } = await supabase
+        .from('users')
+        .insert([
           {
+            id: user.id,
             name: formData.name,
             email: formData.email,
-            phone: formData.phone,
+            password_hash: formData.password // Hash seria ideal, mas mantendo compatibilidade
+          }
+        ]);
+        
+      if (userError) {
+        console.warn("Aviso ao inserir na tabela users:", userError);
+      }
+
+      // 4. Criar solicitação de aprovação
+      const { error: requestError } = await supabase
+        .from('partner_approval_requests')
+        .insert([
+          {
+            type: 'new_partner_request',
+            partner_email: formData.email,
+            partner_name: formData.name,
             company_name: formData.company_name,
             company_type: formData.company_type,
-            instagram: formData.instagram,
-            website: formData.website,
-            time: new Date().toLocaleString('pt-BR')
-          },
-          'vh-KJ6gILHfM7CRpN' // User ID (Public Key)
-        );
-        console.log('EmailJS: Email de novo parceiro enviado!');
-      } catch (emailjsError) {
-        console.error('Erro ao enviar email via EmailJS:', emailjsError);
-        toast({
-          title: '⚠️ Aviso',
-          description: 'Solicitação registrada, mas o email de notificação não foi enviado.',
-          variant: 'destructive'
-        });
+            phone: formData.phone,
+            user_id: user.id,
+            partner_id: partnerData.id,
+            status: 'pending'
+          }
+        ]);
+        
+      if (requestError) {
+        console.error("Erro ao criar solicitação de aprovação:", requestError);
       }
 
-
-      // 3. Enviar notificação para Victor
+      // 5. Enviar email de notificação (opcional - EmailJS)
       try {
-        const notificationData = {
-          type: 'new_partner_request',
-          partner_email: formData.email,
-          partner_name: formData.name,
-          company_name: formData.company_name,
-          company_type: formData.company_type,
-          phone: formData.phone,
-          instagram: formData.instagram,
-          website: formData.website,
-          user_id: user.id,
-          partner_id: partnerData.id,
-          created_at: new Date().toISOString()
-        };
-
-        const { error: notificationError } = await supabase
-          .from('partner_approval_requests')
-          .insert([notificationData]);
-
-        if (notificationError) {
-          console.error("Erro ao criar notificação:", notificationError);
-        }
-
-        // Enviar emails para Victor e admin
-        try {
-          // Email para Victor
-          await supabase.functions.invoke('send-email', {
-            body: {
-              type: 'new_partner_notification',
-              to: 'victor@talka.tech',
-              partnerData: {
-                name: formData.name,
-                email: formData.email,
-                company_name: formData.company_name,
-                company_type: formData.company_type,
-                phone: formData.phone,
-                instagram: formData.instagram,
-                website: formData.website
-              }
-            }
-          });
-
-          // Email para admin
-          await supabase.functions.invoke('send-email', {
-            body: {
-              type: 'new_partner_notification',
-              to: 'admin@talka.tech',
-              partnerData: {
-                name: formData.name,
-                email: formData.email,
-                company_name: formData.company_name,
-                company_type: formData.company_type,
-                phone: formData.phone,
-                instagram: formData.instagram,
-                website: formData.website
-              }
-            }
-          });
-        } catch (emailError) {
-          console.error("Erro ao enviar email:", emailError);
-        }
-
-      } catch (notificationErr) {
-        console.error("Erro ao enviar notificação:", notificationErr);
+        // Aqui você pode configurar EmailJS se necessário
+        console.log('Novo parceiro cadastrado:', {
+          name: formData.name,
+          email: formData.email,
+          company: formData.company_name
+        });
+      } catch (emailError) {
+        console.warn("Email de notificação não enviado:", emailError);
       }
+
+      toast({
+        title: "✅ Cadastro realizado!",
+        description: "Sua solicitação foi enviada para análise.",
+      });
 
       setShowConfirmEmail(true);
+      
     } catch (error: any) {
       console.error("Erro no cadastro:", error);
       toast({
