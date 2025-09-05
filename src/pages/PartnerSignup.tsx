@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { EyeSlash, Eye, ArrowRight, User, Buildings, Envelope, Phone, Briefcase, Key } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,13 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import emailjs from 'emailjs-com';
-import { User, Building, Mail, Phone, Briefcase, KeyRound } from "lucide-react";
 import { Link } from "react-router-dom";
+import Navigation from "@/components/Navigation";
 
 // URL da API
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-export default function PartnerSignup() {
+function PartnerSignup() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +25,9 @@ export default function PartnerSignup() {
     password: "",
     company_name: "",
     company_type: "",
-    phone: ""
+    phone: "",
+    instagram: "",
+    website: ""
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmEmail, setShowConfirmEmail] = useState(false);
@@ -46,7 +48,7 @@ export default function PartnerSignup() {
   };
 
   const validateForm = () => {
-  if (!formData.name || !formData.email || !formData.password || !formData.company_name || !formData.company_type) {
+  if (!formData.name || !formData.email || !formData.password || !formData.company_name || !formData.company_type || !formData.instagram) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -93,6 +95,8 @@ export default function PartnerSignup() {
             phone: formData.phone,
             company_name: formData.company_name,
             company_type: formData.company_type,
+            instagram: formData.instagram,
+            website: formData.website,
             created_at: new Date().toISOString(),
             status: 'pending_approval',
             user_id: user.id // Mantém o vínculo com o usuário
@@ -113,6 +117,8 @@ export default function PartnerSignup() {
             phone: formData.phone,
             company_name: formData.company_name,
             company_type: formData.company_type,
+            instagram: formData.instagram,
+            website: formData.website,
             time: new Date().toLocaleString('pt-BR')
           },
           'vh-KJ6gILHfM7CRpN' // User ID (Public Key)
@@ -137,6 +143,8 @@ export default function PartnerSignup() {
           company_name: formData.company_name,
           company_type: formData.company_type,
           phone: formData.phone,
+          instagram: formData.instagram,
+          website: formData.website,
           user_id: user.id,
           partner_id: partnerData.id,
           created_at: new Date().toISOString()
@@ -162,7 +170,9 @@ export default function PartnerSignup() {
                 email: formData.email,
                 company_name: formData.company_name,
                 company_type: formData.company_type,
-                phone: formData.phone
+                phone: formData.phone,
+                instagram: formData.instagram,
+                website: formData.website
               }
             }
           });
@@ -177,7 +187,9 @@ export default function PartnerSignup() {
                 email: formData.email,
                 company_name: formData.company_name,
                 company_type: formData.company_type,
-                phone: formData.phone
+                phone: formData.phone,
+                instagram: formData.instagram,
+                website: formData.website
               }
             }
           });
@@ -203,73 +215,129 @@ export default function PartnerSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#001e28] via-[#003545] to-[#001e28] text-white">
-      <div className="container mx-auto px-6 py-8">
-        <div className="max-w-2xl mx-auto">
-          <Card className="border-2 border-[#00849d] shadow-2xl shadow-[#00849d]/20 bg-[#001e28]/90 backdrop-blur-sm text-white">
-            <CardHeader className="text-center pb-2">
-              <img src="/logo.png" alt="Conciarge Saúde" className="w-16 h-16 mx-auto mb-2" onError={e => {
+    <div className="min-h-screen bg-white">
+      <Navigation />
+      
+      {/* Hero Section */}
+      <section className="relative bg-white py-20 overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `
+              radial-gradient(circle at 25% 25%, #00849d 2px, transparent 2px),
+              radial-gradient(circle at 75% 75%, #00849d 2px, transparent 2px)
+            `,
+            backgroundSize: '60px 60px'
+          }}></div>
+        </div>
+        
+        <div className="container mx-auto px-6 relative">
+          <div className="max-w-2xl mx-auto">
+            <div className="text-center mb-8">
+              <img src="/logo.png" alt="Conciarge Saúde" className="w-16 h-16 mx-auto mb-4" onError={e => {
                 const fallback = "/logo.png";
                 const img = e.target as HTMLImageElement;
                 if (img && img.src && !img.src.endsWith(fallback)) {
                   img.src = fallback;
                 }
               }} />
-              <CardTitle className="text-3xl mb-1 text-white">Cadastro de Parceiro</CardTitle>
-              <p className="text-gray-300 pt-1 mb-0">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Cadastro de Parceiro
+              </h1>
+              <p className="text-gray-600">
                 Já tem uma conta?{" "}
-                <Link to="/parceria/login" className="text-[#00849d] font-bold hover:text-white transition-colors duration-200 hover:underline">
-                  Faça login
+                <Link to="/parceria/login" className="font-medium text-[#00849d] hover:text-[#006b7d] transition-colors">
+                  Faça login aqui
                 </Link>
               </p>
-            </CardHeader>
-            <CardContent>
-              {showConfirmEmail ? (
-                <div className="pt-4 pb-12 text-center flex flex-col items-center">
-                  <svg width="64" height="64" fill="none" viewBox="0 0 24 24" className="mx-auto mb-3">
-                    <path stroke="#00849d" strokeWidth="1.5" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/>
-                  </svg>
-                  <h2 className="text-2xl font-bold mb-2 text-[#00849d]">Cadastro Enviado para Aprovação</h2>
-                  <p className="text-lg mb-4">Sua solicitação de parceria foi enviada para análise.</p>
-                  <div className="bg-[#00849d]/20 border-2 border-[#00849d] rounded-lg p-4 mb-4">
-                    <p className="text-base text-[#00849d] mb-2 font-bold">
-                      📋 <strong>Próximos passos:</strong>
+            </div>
+
+            <Card className="border-0 shadow-xl">
+              <CardContent className="p-8">
+                {showConfirmEmail ? (
+                  <div className="text-center py-8">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Cadastro Enviado!</h2>
+                    <p className="text-gray-600 mb-6">
+                      Sua solicitação de parceria foi enviada para análise.
                     </p>
-                    <ol className="text-sm text-white text-left space-y-1">
-                      <li>1. Confirme seu e-mail clicando no link enviado para <strong>{formData.email}</strong></li>
-                      <li>2. Aguarde a análise da sua solicitação</li>
-                      <li>3. Você receberá um e-mail quando sua conta for aprovada</li>
-                      <li>4. Após aprovação, poderá acessar o painel de parceiro</li>
-                    </ol>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6 text-left">
+                      <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+                        <ArrowRight className="w-5 h-5 mr-2" />
+                        Próximos passos:
+                      </h3>
+                      <ol className="space-y-2 text-blue-800">
+                        <li className="flex items-start">
+                          <span className="font-semibold mr-2">1.</span>
+                          <span>Confirme seu e-mail clicando no link enviado para <strong>{formData.email}</strong></span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="font-semibold mr-2">2.</span>
+                          <span>Aguarde a análise da sua solicitação</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="font-semibold mr-2">3.</span>
+                          <span>Você receberá um e-mail quando sua conta for aprovada</span>
+                        </li>
+                        <li className="flex items-start">
+                          <span className="font-semibold mr-2">4.</span>
+                          <span>Após aprovação, poderá acessar o painel de parceiro</span>
+                        </li>
+                      </ol>
+                    </div>
+                    
+                    <p className="text-gray-500">
+                      Seu acesso será liberado após a aprovação da equipe responsável.
+                    </p>
                   </div>
-                  <p className="text-base text-muted-foreground">
-                    Seu acesso será liberado após a aprovação da equipe responsável.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Dados Pessoais */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b-2 border-[#00849d] pb-2 text-[#00849d]">Dados Pessoais</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="name" className="text-white font-medium">Nome Completo *</Label>
-                        <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00849d]" />
-                          <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => handleInputChange('name', e.target.value)}
-                            placeholder="Seu nome completo"
-                            required
-                            className="pl-10 bg-[#001e28] border-2 border-[#00849d]/40 text-white placeholder:text-gray-400 focus:border-[#00849d] focus:ring-2 focus:ring-[#00849d]/20"
-                          />
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Dados Pessoais */}
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold text-gray-900 border-b-2 border-[#00849d] pb-2">
+                        Dados Pessoais
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <Label htmlFor="name" className="text-gray-700 font-medium">Nome Completo *</Label>
+                          <div className="relative mt-1">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Input
+                              id="name"
+                              value={formData.name}
+                              onChange={(e) => handleInputChange('name', e.target.value)}
+                              placeholder="Seu nome completo"
+                              required
+                              className="pl-10 border-gray-300 focus:border-[#00849d] focus:ring-[#00849d]"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="phone" className="text-gray-700 font-medium">Telefone</Label>
+                          <div className="relative mt-1">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Input
+                              id="phone"
+                              value={formData.phone}
+                              onChange={(e) => handleInputChange('phone', e.target.value)}
+                              placeholder="(11) 99999-9999"
+                              className="pl-10 border-gray-300 focus:border-[#00849d] focus:ring-[#00849d]"
+                            />
+                          </div>
                         </div>
                       </div>
+                      
                       <div>
-                        <Label htmlFor="email" className="text-white font-medium">Email *</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00849d]" />
+                        <Label htmlFor="email" className="text-gray-700 font-medium">Email *</Label>
+                        <div className="relative mt-1">
+                          <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                           <Input
                             id="email"
                             type="email"
@@ -277,102 +345,124 @@ export default function PartnerSignup() {
                             onChange={(e) => handleInputChange('email', e.target.value)}
                             placeholder="seu@email.com"
                             required
-                            className="pl-10 bg-[#001e28] border-2 border-[#00849d]/40 text-white placeholder:text-gray-400 focus:border-[#00849d] focus:ring-2 focus:ring-[#00849d]/20"
+                            className="pl-10 border-gray-300 focus:border-[#00849d] focus:ring-[#00849d]"
                           />
                         </div>
                       </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="password" className="text-white font-medium">Senha *</Label>
-                      <div className="relative">
-                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00849d]" />
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          value={formData.password}
-                          onChange={(e) => handleInputChange('password', e.target.value)}
-                          placeholder="Mínimo 6 caracteres"
-                          required
-                          className="pl-10 pr-10 bg-[#001e28] border-2 border-[#00849d]/40 text-white placeholder:text-gray-400 focus:border-[#00849d] focus:ring-2 focus:ring-[#00849d]/20"
-                        />
-                        <button
-                          type="button"
-                          tabIndex={-1}
-                          onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00849d] hover:text-white transition-colors duration-200"
-                          aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
+                      
+                      <div>
+                        <Label htmlFor="password" className="text-gray-700 font-medium">Senha *</Label>
+                        <div className="relative mt-1">
+                          <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={formData.password}
+                            onChange={(e) => handleInputChange('password', e.target.value)}
+                            placeholder="Crie uma senha segura"
+                            required
+                            className="pl-10 pr-10 border-gray-300 focus:border-[#00849d] focus:ring-[#00849d]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#00849d] focus:outline-none transition-colors"
+                          >
+                            {showPassword ? <EyeSlash className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="phone" className="text-white font-medium">Telefone</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00849d]" />
-                        <Input
-                          id="phone"
-                          value={formData.phone}
-                          onChange={(e) => handleInputChange('phone', e.target.value)}
-                          placeholder="(11) 99999-9999"
-                          className="pl-10 bg-[#001e28] border-2 border-[#00849d]/40 text-white placeholder:text-gray-400 focus:border-[#00849d] focus:ring-2 focus:ring-[#00849d]/20"
-                        />
+
+                    {/* Dados da Empresa */}
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold text-gray-900 border-b-2 border-[#00849d] pb-2">
+                        Dados da Empresa
+                      </h3>
+                      
+                      <div>
+                        <Label htmlFor="company_name" className="text-gray-700 font-medium">Nome da Empresa *</Label>
+                        <div className="relative mt-1">
+                          <Buildings className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="company_name"
+                            value={formData.company_name}
+                            onChange={(e) => handleInputChange('company_name', e.target.value)}
+                            placeholder="Nome da sua empresa"
+                            required
+                            className="pl-10 border-gray-300 focus:border-[#00849d] focus:ring-[#00849d]"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  {/* Dados da Empresa */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b-2 border-[#00849d] pb-2 text-[#00849d]">Dados da Empresa</h3>
-                    <div>
-                      <Label htmlFor="company_name" className="text-white font-medium">Nome da Empresa *</Label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00849d]" />
-                        <Input
-                          id="company_name"
-                          value={formData.company_name}
-                          onChange={(e) => handleInputChange('company_name', e.target.value)}
-                          placeholder="Nome da sua empresa"
-                          required
-                          className="pl-10 bg-[#001e28] border-2 border-[#00849d]/40 text-white placeholder:text-gray-400 focus:border-[#00849d] focus:ring-2 focus:ring-[#00849d]/20"
-                        />
+                      
+                      <div>
+                        <Label htmlFor="company_type" className="text-gray-700 font-medium">Tipo de Empresa *</Label>
+                        <div className="relative mt-1">
+                          <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
+                          <Select value={formData.company_type} onValueChange={(value) => handleInputChange('company_type', value)}>
+                            <SelectTrigger className="pl-10 border-gray-300 focus:border-[#00849d] focus:ring-[#00849d]">
+                              <SelectValue placeholder="Selecione o tipo da sua empresa" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {companyTypes.map((type) => (
+                                <SelectItem key={type} value={type}>
+                                  {type}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="company_type" className="text-white font-medium">Tipo de Empresa *</Label>
-                      <div className="relative">
-                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00849d] z-10" />
-                        <Select value={formData.company_type} onValueChange={(value) => handleInputChange('company_type', value)}>
-                          <SelectTrigger className="pl-10 bg-[#001e28] border-2 border-[#00849d]/40 text-white focus:border-[#00849d] focus:ring-2 focus:ring-[#00849d]/20">
-                            <SelectValue
-                              placeholder={<span className="text-gray-400">Selecione o tipo da sua empresa</span>}
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <Label htmlFor="instagram" className="text-gray-700 font-medium">Instagram da Empresa *</Label>
+                          <div className="relative mt-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">@</span>
+                            <Input
+                              id="instagram"
+                              value={formData.instagram}
+                              onChange={(e) => handleInputChange('instagram', e.target.value)}
+                              placeholder="usuarioempresa"
+                              required
+                              className="pl-8 border-gray-300 focus:border-[#00849d] focus:ring-[#00849d]"
                             />
-                          </SelectTrigger>
-                          <SelectContent className="bg-[#001e28] border-2 border-[#00849d]/40">
-                            {companyTypes.map((type) => (
-                              <SelectItem key={type} value={type} className="text-white hover:bg-[#00849d]/30 focus:bg-[#00849d]/30">
-                                {type}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="website" className="text-gray-700 font-medium">Site da Empresa</Label>
+                          <div className="relative mt-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🌐</span>
+                            <Input
+                              id="website"
+                              value={formData.website}
+                              onChange={(e) => handleInputChange('website', e.target.value)}
+                              placeholder="www.suaempresa.com.br"
+                              className="pl-8 border-gray-300 focus:border-[#00849d] focus:ring-[#00849d]"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <Button
-                    type="submit"
-                    variant="hero"
-                    size="lg"
-                    className="w-full text-lg py-6 mt-8"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Criando conta..." : "Criar Conta de Parceiro"}
-                  </Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
+
+                    <Button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full bg-[#00849d] hover:bg-[#006b7d] text-white py-3 text-lg font-semibold"
+                    >
+                      {isLoading ? 'Criando conta...' : 'Criar Conta de Parceiro'}
+                      {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
+                    </Button>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
+
+export default PartnerSignup;

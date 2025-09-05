@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -13,6 +14,13 @@ export default function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Páginas que têm fundo branco e precisam da navbar sempre visível
+  const whiteBackgroundPages = ['/parceria/login', '/parceria/cadastro', '/parceria/painel', '/parceria/admin'];
+  const isWhiteBackgroundPage = whiteBackgroundPages.includes(location.pathname);
+  
+  // Determina se deve mostrar versão "light" (para fundos brancos) ou "dark" (para fundos escuros)
+  const shouldUseLightVersion = scrolled || isWhiteBackgroundPage;
+
   const menuItems = [
     { label: "Recursos", href: "#recursos" },
     { label: "Especialistas", href: "#especialistas" }, 
@@ -22,7 +30,7 @@ export default function Navigation() {
 
   return (
     <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-      scrolled 
+      shouldUseLightVersion 
         ? 'bg-white/95 backdrop-blur-sm shadow-lg py-3' 
         : 'bg-transparent py-4'
     }`}>
@@ -32,7 +40,9 @@ export default function Navigation() {
           <img 
             src="/logo.png" 
             alt="Conciarge" 
-            className="h-10 w-auto"
+            className={`h-10 w-auto transition-all duration-300 ${
+              shouldUseLightVersion ? 'brightness-0 saturate-100' : ''
+            }`}
             onError={e => {
               const fallback = "/logo.png";
               const img = e.target as HTMLImageElement;
@@ -50,7 +60,7 @@ export default function Navigation() {
               key={index}
               href={item.href}
               className={`font-medium transition-colors duration-200 ${
-                scrolled 
+                shouldUseLightVersion 
                   ? 'text-gray-700 hover:text-[#00849d]' 
                   : 'text-white hover:text-[#00849d]'
               }`}
@@ -64,8 +74,8 @@ export default function Navigation() {
         <Link
           to="/parceria/login"
           className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-            scrolled
-              ? 'bg-[#00849d] text-white hover:bg-[#006d83]'
+            shouldUseLightVersion
+              ? 'bg-white text-[#00849d] hover:bg-[#00849d] hover:text-white border border-[#00849d]'
               : 'bg-[#00849d] text-white hover:bg-white hover:text-[#00849d] border border-[#00849d]'
           }`}
         >
