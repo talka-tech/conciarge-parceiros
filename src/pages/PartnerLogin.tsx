@@ -95,54 +95,66 @@ export default function PartnerLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#001e28] via-[#003545] to-[#001e28] text-white">
-      <div className="w-full max-w-md px-4 py-10">
-        <div className="bg-[#001e28]/90 rounded-2xl shadow-2xl shadow-[#00849d]/20 border-2 border-[#00849d] p-8 backdrop-blur-sm">
-          <div className="flex flex-col items-center mb-6">
-            <img src="/logo.png" alt="Conciarge Saúde" className="w-16 h-16 mb-4" onError={e => {
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <img 
+            src="/logo.png" 
+            alt="Conciarge Saúde" 
+            className="h-16 w-auto mx-auto mb-6"
+            onError={e => {
               const fallback = "/logo.png";
               const img = e.target as HTMLImageElement;
               if (img && img.src && !img.src.endsWith(fallback)) {
                 img.src = fallback;
               }
-            }} />
-            <h1 className="text-3xl font-bold mb-1 text-white">Acesse sua Conta</h1>
-            <p className="text-gray-300 text-sm mb-4">
-              Não tem uma conta?{' '}
-              <Link to="/parceria/cadastro" className="text-[#00849d] font-bold hover:text-white transition-colors duration-200 hover:underline">Cadastre-se</Link>
-            </p>
-            
-            {/* Seletor de tipo de login */}
-            <div className="flex gap-2 p-1 bg-[#001e28] border border-[#00849d]/40 rounded-lg mb-4">
-              <button
-                type="button"
-                onClick={() => setLoginType('partner')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  loginType === 'partner' 
-                    ? 'bg-[#00849d] text-white shadow-lg shadow-[#00849d]/30' 
-                    : 'text-gray-300 hover:text-white hover:bg-[#00849d]/20'
-                }`}
-              >
-                Parceiro
-              </button>
-              <button
-                type="button"
-                onClick={() => setLoginType('admin')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                  loginType === 'admin' 
-                    ? 'bg-[#00849d] text-white shadow-lg shadow-[#00849d]/30' 
-                    : 'text-gray-300 hover:text-white hover:bg-[#00849d]/20'
-                }`}
-              >
-                Administrador
-              </button>
-            </div>
+            }}
+          />
+          <h2 className="text-3xl font-bold text-gray-900">
+            Acesse sua conta
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Não tem uma conta?{' '}
+            <Link to="/parceria/cadastro" className="font-medium text-[#00849d] hover:text-[#006d83]">
+              Cadastre-se aqui
+            </Link>
+          </p>
+        </div>
+
+        <div className="bg-white shadow-xl rounded-lg p-8">
+          {/* Seletor de tipo de login */}
+          <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => setLoginType('partner')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                loginType === 'partner'
+                  ? 'bg-[#00849d] text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Parceiro
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginType('admin')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                loginType === 'admin'
+                  ? 'bg-[#00849d] text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Administrador
+            </button>
           </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1 text-white">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00849d]" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   id="email"
                   type="email"
@@ -151,14 +163,17 @@ export default function PartnerLogin() {
                   placeholder="seu@email.com"
                   required
                   autoComplete="username"
-                  className="pl-10 pr-4 h-14 w-full rounded-lg border-2 border-[#00849d]/40 bg-[#001e28] text-white caret-white placeholder:text-gray-400 placeholder:opacity-90 focus:bg-[#001e28] focus:border-[#00849d] focus:ring-2 focus:ring-[#00849d]/20 outline-none transition"
+                  className="pl-10 block w-full border border-gray-300 rounded-lg py-3 px-4 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#00849d] focus:border-[#00849d] outline-none transition-colors"
                 />
               </div>
             </div>
+
             <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-1 text-white">Senha</label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Senha
+              </label>
               <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00849d]" />
+                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
@@ -167,25 +182,22 @@ export default function PartnerLogin() {
                   placeholder="Sua senha"
                   required
                   autoComplete="current-password"
-                  className="pl-10 pr-10 h-14 w-full rounded-lg border-2 border-[#00849d]/40 bg-[#001e28] text-white caret-white placeholder:text-gray-400 placeholder:opacity-90 focus:bg-[#001e28] focus:border-[#00849d] focus:ring-2 focus:ring-[#00849d]/20 outline-none transition"
+                  className="pl-10 pr-10 block w-full border border-gray-300 rounded-lg py-3 px-4 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-[#00849d] focus:border-[#00849d] outline-none transition-colors"
                 />
                 <button
                   type="button"
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                   onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00849d] hover:text-white transition-colors duration-200 focus:outline-none"
-                  tabIndex={0}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#00849d] focus:outline-none transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
+
             <Button
               type="submit"
-              variant="hero"
-              size="lg"
-              className="w-full text-lg py-6 mt-2"
               disabled={isLoading}
+              className="w-full bg-[#00849d] hover:bg-[#006d83] text-white py-3 px-4 rounded-lg font-medium transition-colors duration-200"
             >
               {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
