@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 
 const Navigation = () => {
   const menuItems = [
-    { label: "Início", href: "https://www.converseia.com/" },
-    { label: "Sobre", href: "https://www.converseia.com/#sobre" },
-    { label: "Recursos", href: "https://www.converseia.com/#recursos" },
-    { label: "Planos", href: "https://www.converseia.com/#planos" },
-    { label: "Documentação", href: "https://converseia.gitbook.io/converseia-docs" }
+    { label: "Início", href: "https://www.conciarge.com.br/" },
+    { label: "Sobre", href: "https://www.conciarge.com.br/#sobre" },
+    { label: "Recursos", href: "https://www.conciarge.com.br/#recursos" },
+    { label: "Planos", href: "https://www.conciarge.com.br/#planos" },
+    { label: "Documentação", href: "https://conciarge.gitbook.io/conciarge-docs" }
   ];
 
   // Motion: reduz e arredonda ao scroll
@@ -22,7 +22,7 @@ const Navigation = () => {
 
   return (
     <nav
-      className={`w-full bg-[#101828]/90 shadow-lg backdrop-blur-md text-white fixed top-0 left-0 z-50 transition-all duration-300
+      className={`w-full bg-[#001e28]/95 shadow-2xl backdrop-blur-md text-white fixed top-0 left-0 z-50 transition-all duration-300 border-b border-[#00849d]/30
         ${scrolled ? "h-12 rounded-2xl mx-2 mt-2" : "h-12 rounded-none mx-0 mt-0"}
         flex items-center`}
     >
@@ -36,7 +36,7 @@ const Navigation = () => {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-white text-base font-semibold px-4 py-2 rounded-md transition-colors duration-200 hover:bg-blue-600/80 hover:text-white focus:bg-blue-700/90 focus:text-white"
+                  className="text-white text-base font-bold px-4 py-2 rounded-md transition-all duration-200 hover:bg-[#00849d] hover:text-white focus:bg-[#00849d] focus:text-white hover:shadow-lg hover:shadow-[#00849d]/30"
                 >
                   {item.label}
                 </a>
@@ -49,7 +49,7 @@ const Navigation = () => {
         <div className="flex-shrink-0">
           <Link
             to="/parceria/login"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold px-6 py-2 rounded-lg transition-colors duration-200 border border-blue-500 hover:border-blue-400"
+            className="bg-[#00849d] hover:bg-white hover:text-[#00849d] text-white text-base font-bold px-6 py-2 rounded-lg transition-all duration-200 border-2 border-[#00849d] hover:border-[#00849d] shadow-lg shadow-[#00849d]/30"
           >
             Login
           </Link>
